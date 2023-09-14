@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 public class DatabaseImportPage extends JFrame{
     private JTextField dbAddressField;
@@ -31,11 +32,18 @@ public class DatabaseImportPage extends JFrame{
         passwordField = new JPasswordField();
         JLabel userLabel = new JLabel("用户:");
         userField = new JTextField();
+
+        JPanel panel = new JPanel(new GridLayout(1, 2));
         JLabel folderLabel = new JLabel("文件夹位置:");
         folderField = new JTextField();
+        JButton folderButton = new JButton("选择文件夹");
+        panel.add(folderField);
+        panel.add(folderButton);
 
         JButton importButton = new JButton("开始导入");
         JButton testConnectionButton = new JButton("测试连接");
+
+
 
         add(dbAddressLabel);
         add(dbAddressField);
@@ -46,7 +54,8 @@ public class DatabaseImportPage extends JFrame{
         add(passwordLabel);
         add(passwordField);
         add(folderLabel);
-        add(folderField);
+//        add(folderField);
+        add(panel);
         add(importButton);
         add(testConnectionButton);
 
@@ -63,11 +72,7 @@ public class DatabaseImportPage extends JFrame{
                 // 执行导入操作，你可以在这里调用相应的方法或函数
 
 
-                try {
-                    importData(dbAddress,dbName ,user, password, folder);
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
-                }
+                importData(dbAddress,dbName ,user, password, folder);
 
 
             }
@@ -91,10 +96,32 @@ public class DatabaseImportPage extends JFrame{
                 }
             }
         });
+
+
+        // 添加按钮点击事件的监听器
+        folderButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+
+                int result = fileChooser.showOpenDialog(null);
+
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    // 用户选择了文件或文件夹
+                    File selectedFile = fileChooser.getSelectedFile();
+                    String selectedPath = selectedFile.getAbsolutePath();
+                    folderField.setText(selectedPath);
+                } else {
+                    // 用户取消了选择
+                    folderField.setText("");
+                }
+            }
+        });
     }
 
     // 添加导入数据的逻辑方法
-    private void importData(String dbAddress,String dbname, String user, String password, String folderPath) throws SQLException {
+    private void importData(String dbAddress,String dbname, String user, String password, String folderPath)  {
         dbAddress = "123";
         dbname = "123";
         user = "123";
@@ -113,18 +140,18 @@ public class DatabaseImportPage extends JFrame{
             }
 
         }catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
             SqlConnect.getSqlConnect().setConnection(null);
             // 捕获数据库连接异常
             e.printStackTrace();
 
         }
 
-        //测试代码
         SqlConnect connection = SqlConnect.getSqlConnect();
 
         Connection con =  connection.getConnection(); // 调用连接数据库的方法
-//        con.setAutoCommit(false); //禁止自动提交
+
+
         Statement statement = null; // 创建声明对象
         try {
             statement = con.createStatement();
@@ -132,41 +159,98 @@ public class DatabaseImportPage extends JFrame{
             throw new RuntimeException(e);
         }
 
-        File folder = new File(folderPath);
+        java.util.List<String> sqlFiles = new ArrayList<>();
 
-        java.util.List<String> sqlFiles = FileHandle.findSqlFiles(folder);
+        if(folderPath.endsWith(".sql")){
+            sqlFiles.add(folderPath);
+        }else{
 
-        for (String sqlFilePath : sqlFiles) {
-            String result = new String();
-            try {
-                result =  FileHandle.readFileContent(sqlFilePath);
-//                System.out.println(result);
-                String[] lines = result.split("\n");
-                for( String line : lines){
-                    statement.addBatch(line);
-                }
-            } catch (FileNotFoundException | SQLException e) {
-                JOptionPane.showMessageDialog(null, "执行失败：" + e.getMessage(), "提示", JOptionPane.INFORMATION_MESSAGE);
-                throw new RuntimeException(e);
-            }
-
+            File folder = new File(folderPath);
+            sqlFiles = FileHandle.findSqlFiles(folder);
         }
 
-        int[] updateCounts = new int[0];
+
         try {
-            updateCounts = statement.executeBatch();
-            for (int count : updateCounts) {
-                System.out.println("受影响的行数：" + count);
+            con.setAutoCommit(false);  // 以文件为单位进行事务处理
+
+            for (String sqlFilePath : sqlFiles) {
+                String result = new String();
+
+                try {  // 捕获文件未取到的 exception
+                    result = FileHandle.readFileContent(sqlFilePath);
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+
+                String[] lines = result.split("\n");
+                for (String line : lines) {
+                    try {
+                        statement.execute(line);
+                    } catch (SQLException e) { // 捕获sql异常，提示用用户修改
+
+                        JTextArea textArea = new JTextArea(
+                                "错误文件："+ sqlFilePath+"\n" +
+                                        "错误语句："+line
+                        );
+                        textArea.setEditable(false);
+                        JScrollPane scrollPane = new JScrollPane(textArea);
+
+                        JPanel panel = new JPanel();
+                        panel.add(scrollPane);
+
+                        JOptionPane.showMessageDialog(null, panel,"错误", JOptionPane.ERROR_MESSAGE);
+
+                        System.out.println(sqlFilePath);
+                        System.out.println(line);
+                        throw new SQLException(line + "出错");
+                    }
+                }
             }
-//            con.commit();
+
             JOptionPane.showMessageDialog(null, "执行成功" , "提示", JOptionPane.INFORMATION_MESSAGE);
 
+
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "执行失败：" + e.getMessage(), "提示", JOptionPane.INFORMATION_MESSAGE);
+            e.printStackTrace();
+            try {
+                con.rollback();
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             throw new RuntimeException(e);
+        } finally {
+            try {
+                con.setAutoCommit(true);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
 
+
+
     }
+
+//        int[] updateCounts = new int[0];
+//        try {
+//            updateCounts = statement.executeBatch();
+//            JOptionPane.showMessageDialog(null, "执行成功" , "提示", JOptionPane.INFORMATION_MESSAGE);
+//
+//        } catch (SQLException e) {
+//            JOptionPane.showMessageDialog(null, "执行失败：" + e.getMessage(), "提示", JOptionPane.INFORMATION_MESSAGE);
+////            throw new RuntimeException(e);
+//        } finally {
+//            System.out.println(updateCounts.length);
+//            System.out.println(321);
+//            for (int i=0;i< updateCounts.length ;i++) {
+//                System.out.println(updateCounts[i]);
+//                System.out.println(Statement.EXECUTE_FAILED);
+//                if(updateCounts[i] == Statement.EXECUTE_FAILED){
+//                    System.out.println("出问题的行号:" + String.valueOf(i));
+//                }
+//            }
+//        }
+
+
 
     // 添加测试数据库连接的逻辑方法
     private void testDatabaseConnection(String dbAddress, String dbname,String user, String password) throws SQLException {
@@ -185,24 +269,13 @@ public class DatabaseImportPage extends JFrame{
         }catch (SQLException e) {
             // 捕获数据库连接异常
             e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e){
-            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
         }
 
     }
 
-    public void test(SqlConnect c) throws SQLException {
-        Connection connection =  c.getConnection(); // 调用连接数据库的方法
-        Statement statement = connection.createStatement(); // 创建声明对象
-
-        String sql = "select  * from aam_appasset limit 3,20;";
-        ResultSet resultSet = statement.executeQuery(sql);
-
-        while(resultSet.next()){
-            System.out.println(resultSet.getString("ASSETNAME"));
-        }
-    }
 
     public static void main(String[] args) {
  
