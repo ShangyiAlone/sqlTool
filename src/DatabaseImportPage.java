@@ -122,11 +122,6 @@ public class DatabaseImportPage extends JFrame{
 
     // 添加导入数据的逻辑方法
     private void importData(String dbAddress,String dbname, String user, String password, String folderPath)  {
-        dbAddress = "10.16.53.33:3306";
-        dbname = "NCC_IFRS9_0807";
-        user = "NCC_IFRS9_0807";
-        password = "123qwe";
-        folderPath = "C:\\Users\\Administrator\\Desktop\\test";
 
 
         String url = "jdbc:mysql://"+dbAddress+"/"+dbname;
