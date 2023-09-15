@@ -43,8 +43,6 @@ public class DatabaseImportPage extends JFrame{
         JButton importButton = new JButton("开始导入");
         JButton testConnectionButton = new JButton("测试连接");
 
-
-
         add(dbAddressLabel);
         add(dbAddressField);
         add(dbName);
@@ -54,11 +52,11 @@ public class DatabaseImportPage extends JFrame{
         add(passwordLabel);
         add(passwordField);
         add(folderLabel);
-//        add(folderField);
         add(panel);
         add(importButton);
         add(testConnectionButton);
 
+        // 导入文件夹下sql文件，并测试连接
         importButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -71,13 +69,13 @@ public class DatabaseImportPage extends JFrame{
 
                 // 执行导入操作，你可以在这里调用相应的方法或函数
 
-
                 importData(dbAddress,dbName ,user, password, folder);
 
 
             }
         });
 
+        // 测试数据库配置是否成功
         testConnectionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -98,7 +96,7 @@ public class DatabaseImportPage extends JFrame{
         });
 
 
-        // 添加按钮点击事件的监听器
+        // 选择文件夹或者文件
         folderButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -188,20 +186,23 @@ public class DatabaseImportPage extends JFrame{
                         statement.execute(line);
                     } catch (SQLException e) { // 捕获sql异常，提示用用户修改
 
-                        JTextArea textArea = new JTextArea(
-                                "错误文件："+ sqlFilePath+"\n" +
-                                        "错误语句："+line
-                        );
-                        textArea.setEditable(false);
-                        JScrollPane scrollPane = new JScrollPane(textArea);
+//                        JTextArea textArea = new JTextArea(
+//                                "错误文件："+ sqlFilePath+"\n" +
+//                                        "错误语句："+line
+//                        );
+//                        textArea.setEditable(false);
+//                        JScrollPane scrollPane = new JScrollPane(textArea);
+//
+//                        JPanel panel = new JPanel();
+//                        panel.add(scrollPane);
+//
+//                        JOptionPane.showMessageDialog(null, panel,"错误", JOptionPane.ERROR_MESSAGE);
 
-                        JPanel panel = new JPanel();
-                        panel.add(scrollPane);
-
-                        JOptionPane.showMessageDialog(null, panel,"错误", JOptionPane.ERROR_MESSAGE);
+                        DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath);
 
                         System.out.println(sqlFilePath);
                         System.out.println(line);
+
                         throw new SQLException(line + "出错");
                     }
                 }
@@ -230,32 +231,14 @@ public class DatabaseImportPage extends JFrame{
 
     }
 
-//        int[] updateCounts = new int[0];
-//        try {
-//            updateCounts = statement.executeBatch();
-//            JOptionPane.showMessageDialog(null, "执行成功" , "提示", JOptionPane.INFORMATION_MESSAGE);
-//
-//        } catch (SQLException e) {
-//            JOptionPane.showMessageDialog(null, "执行失败：" + e.getMessage(), "提示", JOptionPane.INFORMATION_MESSAGE);
-////            throw new RuntimeException(e);
-//        } finally {
-//            System.out.println(updateCounts.length);
-//            System.out.println(321);
-//            for (int i=0;i< updateCounts.length ;i++) {
-//                System.out.println(updateCounts[i]);
-//                System.out.println(Statement.EXECUTE_FAILED);
-//                if(updateCounts[i] == Statement.EXECUTE_FAILED){
-//                    System.out.println("出问题的行号:" + String.valueOf(i));
-//                }
-//            }
-//        }
-
-
 
     // 添加测试数据库连接的逻辑方法
     private void testDatabaseConnection(String dbAddress, String dbname,String user, String password) throws SQLException {
         String url = "jdbc:mysql://"+dbAddress+"/"+dbname;
-//        SqlConnect c = SqlConnect.getSqlConnect("jdbc:mysql://123/123","123","123");
+//        SqlConnect c = SqlConnect.getSqlConnect("jdbc:mysql://123/
+//        123",
+//        "123",
+//        "123");
 
         boolean SqlConnectCreated =  SqlConnect.isInstanceCreated();
 
