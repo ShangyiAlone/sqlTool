@@ -61,7 +61,6 @@ public class FileHandle {
                 throw new RuntimeException(e);
             }
 
-//            System.out.print(result);
             builder.append(result);
 
         }
