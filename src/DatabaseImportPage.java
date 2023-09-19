@@ -162,16 +162,18 @@ public class DatabaseImportPage extends JFrame{
         if(folderPath.endsWith(".sql")){
             sqlFiles.add(folderPath);
         }else{
-
             File folder = new File(folderPath);
             sqlFiles = FileHandle.findSqlFiles(folder);
         }
 
 
-        try {
-            con.setAutoCommit(false);  // 以文件为单位进行事务处理
+//        try {
+//            con.setAutoCommit(false);  // 以文件为单位进行事务处理
 
-            for (String sqlFilePath : sqlFiles) {
+        boolean continueExecute = true;
+        for (String sqlFilePath : sqlFiles) {
+            if(continueExecute){
+
                 String result = new String();
 
                 try {  // 捕获文件未取到的 exception
@@ -182,54 +184,63 @@ public class DatabaseImportPage extends JFrame{
 
                 String[] lines = result.split("\n");
                 for (String line : lines) {
-                    try {
-                        statement.execute(line);
-                    } catch (SQLException e) { // 捕获sql异常，提示用用户修改
-
-//                        JTextArea textArea = new JTextArea(
-//                                "错误文件："+ sqlFilePath+"\n" +
-//                                        "错误语句："+line
-//                        );
-//                        textArea.setEditable(false);
-//                        JScrollPane scrollPane = new JScrollPane(textArea);
-//
-//                        JPanel panel = new JPanel();
-//                        panel.add(scrollPane);
-//
-//                        JOptionPane.showMessageDialog(null, panel,"错误", JOptionPane.ERROR_MESSAGE);
-
-                        DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath);
-
-                        System.out.println(sqlFilePath);
-                        System.out.println(line);
-
-                        throw new SQLException(line + "出错");
-                    }
+                    if(continueExecute){
+                        try {
+                            System.out.println(line);
+                            statement.execute(line);
+                        } catch (SQLException e) { // 捕获sql异常，提示用用户修改
+                            DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath, sqlFiles,statement);
+                            continueExecute = false;
+                            throw new RuntimeException(e);
+                        }
+                    }else break;
                 }
-            }
-
-            JOptionPane.showMessageDialog(null, "执行成功" , "提示", JOptionPane.INFORMATION_MESSAGE);
-
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            try {
-                con.rollback();
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                con.setAutoCommit(true);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            }else break;
         }
 
+//        JOptionPane.showMessageDialog(null, "执行成功" , "提示", JOptionPane.INFORMATION_MESSAGE);
 
+
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//            try {
+//                con.rollback();
+//            } catch (SQLException ex) {
+//                throw new RuntimeException(ex);
+//            }
+//            throw new RuntimeException(e);
+//        } finally {
+//            try {
+//                con.setAutoCommit(true);
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
 
     }
+
+//    private static void ExcuteSql(Statement statement,java.util.List<String> sqlFiles,int start){
+//
+////        这里通过索引，跳过已经执行过的那个sql文件，直接执行下一个
+//        for (int i = start+1;i<sqlFiles.size();i++) {
+//            String result = new String();
+//
+//            try {  // 捕获文件未取到的 exception
+//                result = FileHandle.readFileContent(sqlFiles.get(i));
+//            } catch (FileNotFoundException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            String[] lines = result.split("\n");
+//            for (String line : lines) {
+//                try {
+//                    statement.execute(line);
+//                } catch (SQLException e) { // 捕获sql异常，提示用用户修改
+//                    DeBugPage newFrame = new DeBugPage(line,lines,sqlFiles.get(i), sqlFiles,statement);
+//                }
+//            }
+//        }
+//    }
 
 
     // 添加测试数据库连接的逻辑方法
