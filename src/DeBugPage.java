@@ -4,10 +4,21 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import javax.swing.text.StyledDocument;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class DeBugPage extends JFrame {
-    public DeBugPage(String line, String[] SqlFile, String sqlFilePath) {
+    private static Statement statement;
 
+    public DeBugPage(String line, String[] SqlFile, String sqlFilePath,java.util.List<String> sqlFilePaths,Statement statement) {
+
+        this.statement = statement;
 
         JTextArea textArea = new JTextArea(
                     "错误文件："+ sqlFilePath+"\n" +
@@ -22,13 +33,8 @@ public class DeBugPage extends JFrame {
 
 //        计算问题sql语句位置
         int startIndex = res.indexOf(line.trim());
+//        System.out.println(startIndex);
 
-
-
-
-//        JTextArea textArea2 = new JTextArea(
-//            res.toString()
-//        );
 
         JTextPane textPane2 = new JTextPane();
         textPane2.setText(res.toString());
@@ -42,7 +48,7 @@ public class DeBugPage extends JFrame {
         // 创建一个文档
         StyledDocument document = textPane2.getStyledDocument();
 
-        //
+        // 设置文档的样式
         document.setCharacterAttributes(startIndex, line.trim().length(), style, true);
 
         textArea.setEditable(false);
@@ -98,15 +104,170 @@ public class DeBugPage extends JFrame {
 
         panel.add(panel2,constraints);
 
-
-//        panel.add(scrollPane);
-//        panel.add(scrollPane2);
-
         add(panel);
 
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setVisible(true);
+
+        saveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = textPane2.getText();
+                SaveDate(sqlFilePath,text);
+                JOptionPane.showMessageDialog(null, "保存成功", "提示", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
+        continueButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String restSql = textPane2.getText().substring(startIndex);
+
+//                String restSql = res.substring(startIndex);
+
+                ContineExecute(restSql,sqlFilePath,sqlFilePaths);
+
+
+//                SaveDate(sqlFilePath,text);
+            }
+        });
+    }
+
+    private static void SaveDate(String sqlFilePath,String text){
+        try {
+            // 创建一个 FileWriter 对象来写入文件
+            FileWriter writer = new FileWriter(sqlFilePath);
+
+            // 写入文本到文件
+            writer.write(text);
+
+            // 关闭文件写入流
+            writer.close();
+
+            System.out.println("文本已成功写入文件：" + sqlFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("写入文件时发生错误：" + e.getMessage());
+        }
+    }
+
+//    还需要添加参数，需要调用主程序的import函数
+    private static void ContineExecute(String restSql,String sqlFilePath,java.util.List<String> sqlFilePaths){
+
+        //  标记剩余sql执行过程中是否有错
+        boolean allSqlSuccessful = true;
+
+        //  先处理本文件下未执行的sql
+        String[] lines = restSql.split("\n");
+        for (String line : lines) {
+            if(allSqlSuccessful){
+                try {
+                    System.out.println(line);
+                    statement.execute(line);
+                } catch (SQLException e) { // 捕获sql异常，提示用用户修改
+                    // 重新创建一个debug页面对象
+                    e.printStackTrace();
+                    allSqlSuccessful = false;
+                    DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath,  sqlFilePaths,statement);
+                    break;
+                }
+            }
+        }
+
+
+//        接下来执行剩余文件的sql语句，（调用主程序的执行函数）
+//        先得到当前sql文件的位置的索引
+        int index = -1;
+        for(int i = 0;i<sqlFilePaths.size();i++){
+            System.out.println(sqlFilePaths.get(i));
+            if(sqlFilePaths.get(i).equals(sqlFilePath)){
+                index = i;
+                System.out.println(index);
+                System.out.println(sqlFilePath);
+                break;
+            }
+        }
+
+        // 执行出现错误的sql文件后面的所有文件
+        ExcuteSql(statement,sqlFilePaths,index);
+
+//        if(allSqlSuccessful){
+//            JOptionPane.showMessageDialog(null, "所有SQL执行成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+//        }
+
+
+    }
+
+
+//    private static Statement  getSqlStament(String dbAddress,String dbname, String user, String password, String folderPath){
+//        dbAddress = "10.16.53.33:3306";
+//        dbname = "NCC_IFRS9_0807";
+//        user = "NCC_IFRS9_0807";
+//        password = "123qwe";
+//        folderPath = "C:\\Users\\Administrator\\Desktop\\test";
+//
+//
+//        String url = "jdbc:mysql://"+dbAddress+"/"+dbname;
+//        boolean SqlConnectCreated =  SqlConnect.isInstanceCreated();
+//
+//        try {
+//            if(SqlConnectCreated){
+//                SqlConnect.getSqlConnect().setDatabaseParams(url,user,password);
+//            }else{
+//                SqlConnect.getSqlConnect(url,dbname,password);
+//            }
+//
+//        }catch (SQLException e) {
+//            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
+//            SqlConnect.getSqlConnect().setConnection(null);
+//            // 捕获数据库连接异常
+//            e.printStackTrace();
+//
+//        }
+//
+//        SqlConnect connection = SqlConnect.getSqlConnect();
+//
+//        Connection con =  connection.getConnection(); // 调用连接数据库的方法
+//
+//
+//        Statement statement = null; // 创建声明对象
+//        try {
+//            statement = con.createStatement();
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//        return statement;
+//
+//    }
+
+    private static void ExcuteSql(Statement statement,java.util.List<String> sqlFiles,int start){
+
+//        这里通过索引，跳过已经执行过的那个sql文件，直接执行下一个
+        boolean continueExecute = true;
+        for (int i = start+1;i<sqlFiles.size();i++) {
+            if(continueExecute){
+                String result = new String();
+                try {  // 捕获文件未取到的 exception
+                    result = FileHandle.readFileContent(sqlFiles.get(i));
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+
+                String[] lines = result.split("\n");
+                for (String line : lines) {
+                    if(continueExecute){
+                        try {
+                            statement.execute(line);
+                        } catch (SQLException e) { // 捕获sql异常，提示用用户修改
+                            continueExecute = false;
+                            DeBugPage newFrame = new DeBugPage(line,lines,sqlFiles.get(i), sqlFiles,statement);
+                        }
+                    }else break;
+                }
+            }else break;
+        }
     }
 }
 
