@@ -12,13 +12,23 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
+
+import static java.lang.Boolean.TRUE;
 
 public class DeBugPage extends JFrame {
+//    private static DeBugPage deBugPage;
     private static Statement statement;
 
-    public DeBugPage(String line, String[] SqlFile, String sqlFilePath,java.util.List<String> sqlFilePaths,Statement statement) {
+    static boolean continueExecute = true;
+
+    boolean AllOver = false;
+
+    public DeBugPage(String line, String[] SqlFile, String sqlFilePath,java.util.List<String> sqlFilePaths,Statement statement,SQLException e) {
 
         this.statement = statement;
+
+        this.AllOver = false;
 
         JTextArea textArea = new JTextArea(
                     "错误文件："+ sqlFilePath+"\n" +
@@ -33,8 +43,6 @@ public class DeBugPage extends JFrame {
 
 //        计算问题sql语句位置
         int startIndex = res.indexOf(line.trim());
-//        System.out.println(startIndex);
-
 
         JTextPane textPane2 = new JTextPane();
         textPane2.setText(res.toString());
@@ -51,11 +59,17 @@ public class DeBugPage extends JFrame {
         // 设置文档的样式
         document.setCharacterAttributes(startIndex, line.trim().length(), style, true);
 
-        textArea.setEditable(false);
-//        textArea2.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(textArea);
-//        JScrollPane scrollPane2 = new JScrollPane(textArea2);
-        JScrollPane scrollPane2 = new JScrollPane(textPane2);
+        // 显示错误expection
+        String exceptionText = e.toString();
+        JTextPane textPane3 = new JTextPane();
+        textPane3.setText(exceptionText.toString());
+
+        textArea.setEditable(false);  // 文件路径和具体语句不可编辑
+        JScrollPane scrollPane = new JScrollPane(textArea);  // 错误语句显示
+
+        JScrollPane scrollPane2 = new JScrollPane(textPane2); // 源文件显示
+
+        JScrollPane scrollPane3 = new JScrollPane(textPane3); // 报错信息回显
 
 //        JPanel panel = new JPanel(new GridLayout(2, 1));
         JPanel panel = new JPanel(new GridBagLayout());
@@ -83,10 +97,20 @@ public class DeBugPage extends JFrame {
         constraints.fill = GridBagConstraints.BOTH;
         panel.add(scrollPane2, constraints);
 
+        // 设置第三个 JScrollPane
+        constraints.gridx = 0;
+        constraints.gridy = 2;
+        constraints.gridwidth = 1; // 比例为 1
+        constraints.gridheight = 1;
+        constraints.weightx = 1.0;
+        constraints.weighty = 1.0; // 比例为 1:4
+        constraints.fill = GridBagConstraints.BOTH;
+        panel.add(scrollPane3, constraints);
+
 
 //        添加两个新的按钮
         constraints.gridx = 0;
-        constraints.gridy = 2;
+        constraints.gridy = 3;
         constraints.gridwidth = 2; // 一行两列
         constraints.gridheight = 1;
         constraints.weightx = 1.0;
@@ -123,13 +147,9 @@ public class DeBugPage extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String restSql = textPane2.getText().substring(startIndex);
-
-//                String restSql = res.substring(startIndex);
-
                 ContineExecute(restSql,sqlFilePath,sqlFilePaths);
+                continueButton.setEnabled(false);
 
-
-//                SaveDate(sqlFilePath,text);
             }
         });
     }
@@ -152,16 +172,24 @@ public class DeBugPage extends JFrame {
         }
     }
 
-//    还需要添加参数，需要调用主程序的import函数
+//  点击继续执行的按钮
     private static void ContineExecute(String restSql,String sqlFilePath,java.util.List<String> sqlFilePaths){
+
+//        if(deBugPage.AllOver){ // 判断所有的sql文件是否都执行过
+//            return;
+//        }
+//
+//        deBugPage.AllOver = true;
 
         //  标记剩余sql执行过程中是否有错
         boolean allSqlSuccessful = true;
 
-        //  先处理本文件下未执行的sql
+
+        //  先处理本文件下未执行的sql语句
         String[] lines = restSql.split("\n");
         for (String line : lines) {
             if(allSqlSuccessful){
+
                 try {
                     System.out.println(line);
                     statement.execute(line);
@@ -169,32 +197,30 @@ public class DeBugPage extends JFrame {
                     // 重新创建一个debug页面对象
                     e.printStackTrace();
                     allSqlSuccessful = false;
-                    DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath,  sqlFilePaths,statement);
+                    DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath, sqlFilePaths,statement,e);
                     break;
                 }
             }
         }
 
 
-//        接下来执行剩余文件的sql语句，（调用主程序的执行函数）
+//        接下来执行剩余的sql文件下的sql语句
 //        先得到当前sql文件的位置的索引
-        int index = -1;
-        for(int i = 0;i<sqlFilePaths.size();i++){
-            System.out.println(sqlFilePaths.get(i));
-            if(sqlFilePaths.get(i).equals(sqlFilePath)){
-                index = i;
-                System.out.println(index);
-                System.out.println(sqlFilePath);
-                break;
+        if(allSqlSuccessful){
+            int index = -1;
+            for(int i = 0;i<sqlFilePaths.size();i++){
+                System.out.println(sqlFilePaths.get(i));
+                if(sqlFilePaths.get(i).equals(sqlFilePath)){
+                    index = i; // 记录索引
+                    break;
+                }
             }
+
+
+
+            // 执行出现错误的sql文件后面的所有文件
+            ExcuteSql2(statement,sqlFilePaths,index);
         }
-
-        // 执行出现错误的sql文件后面的所有文件
-        ExcuteSql(statement,sqlFilePaths,index);
-
-//        if(allSqlSuccessful){
-//            JOptionPane.showMessageDialog(null, "所有SQL执行成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
-//        }
 
 
     }
@@ -242,7 +268,7 @@ public class DeBugPage extends JFrame {
 //
 //    }
 
-    private static void ExcuteSql(Statement statement,java.util.List<String> sqlFiles,int start){
+    private static void ExcuteSql1(Statement statement,java.util.List<String> sqlFiles,int start){
 
 //        这里通过索引，跳过已经执行过的那个sql文件，直接执行下一个
         boolean continueExecute = true;
@@ -262,12 +288,105 @@ public class DeBugPage extends JFrame {
                             statement.execute(line);
                         } catch (SQLException e) { // 捕获sql异常，提示用用户修改
                             continueExecute = false;
-                            DeBugPage newFrame = new DeBugPage(line,lines,sqlFiles.get(i), sqlFiles,statement);
+                            DeBugPage newFrame = new DeBugPage(line,lines,sqlFiles.get(i), sqlFiles,statement,e);
                         }
                     }else break;
                 }
             }else break;
         }
+
     }
+
+    private static void ExcuteSql2(Statement statement,java.util.List<String> sqlFiles,int start){
+
+        ProgressBarPage progressBarPage = ProgressBarPage.getProgressBarPage();
+        Statement finalStatement = statement;
+        int length = 100 / sqlFiles.size(); // 进度条的长度
+        java.util.List<String> finalSqlFiles = sqlFiles;
+        java.util.List<String> finalSqlFiles1 = sqlFiles;
+
+        SwingWorker<Void, ProgressBarPage.ProgressData> worker = new SwingWorker<Void, ProgressBarPage.ProgressData>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                int totalTasks = finalSqlFiles1.size();
+
+                for (int i = start+1; i < totalTasks; i++) {
+                    System.out.println(finalSqlFiles.get(i));
+
+                    if(!continueExecute){
+                        break;
+                    }
+                    // 模拟执行任务
+                    String sql = "执行：" + finalSqlFiles1.get(i);
+                    updateProgress(i+1, totalTasks, sql);
+
+                    try {
+                        Thread.sleep(500); // 模拟耗时操作
+                        ExcuteSql(finalStatement, finalSqlFiles.get(i), finalSqlFiles);
+
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                return null;
+            }
+
+            @Override
+            protected void process(List<ProgressBarPage.ProgressData> chunks) {
+                // 更新进度条和SQL信息
+                for (ProgressBarPage.ProgressData data : chunks) {
+                    ProgressBarPage.setProcess(data.getProgress());
+                    ProgressBarPage.setRunningSql(data.getSql() );
+                }
+            }
+
+            private void updateProgress(int currentTask, int totalTasks, String sql) {
+                int progress = (int) ((double) currentTask / totalTasks * 100);
+                publish(new ProgressBarPage.ProgressData(progress, sql));
+            }
+
+            @Override
+            protected void done() {
+                // 任务完成后执行操作
+                System.out.println("执行完毕");
+                continueExecute = true;
+            }
+        };
+
+        worker.execute();
+
+    }
+
+    private static void ExcuteSql(Statement statement, String sqlFilePath, java.util.List<String> SqlFiles){
+
+        Boolean continueExecute = true;
+
+        String result = new String();
+
+        try {  // 读取该路径下所有sql语句
+            result = FileHandle.readFileContent(sqlFilePath);
+        } catch (FileNotFoundException e) { // 捕获文件未取到的 exception
+            throw new RuntimeException(e);
+        }
+
+        String[] lines = result.split("\n");
+        for (String line : lines) {
+            if(continueExecute){
+                try {
+                    statement.execute(line);
+                } catch (SQLException e) { // 捕获sql异常，提示用用户修改
+                    DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath, SqlFiles,statement,e);
+                    continueExecute = false;
+                    System.out.println("error");
+                    throw new RuntimeException(e);
+                }
+            }else break;
+        }
+    }
+
+
+
+
 }
 
