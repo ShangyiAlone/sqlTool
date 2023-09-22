@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -5,18 +6,21 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseImportPage extends JFrame{
+
     private JTextField dbAddressField;
     private JPasswordField passwordField;
     private JTextField userField;
     private JTextField folderField;
 
     private JTextField dbNameField;
+
+    boolean continueExecute = true;
 
     public DatabaseImportPage() {
         setTitle("数据库导入工具");
@@ -119,7 +123,7 @@ public class DatabaseImportPage extends JFrame{
     }
 
     // 添加导入数据的逻辑方法
-    private void importData(String dbAddress,String dbname, String user, String password, String folderPath)  {
+    private void importData(String dbAddress,String dbname, String user, String password, String folderPath) {
         dbAddress = "10.16.53.33:3306";
         dbname = "NCC_IFRS9_0807";
         user = "NCC_IFRS9_0807";
@@ -127,17 +131,17 @@ public class DatabaseImportPage extends JFrame{
         folderPath = "C:\\Users\\Administrator\\Desktop\\test";
 
 
-        String url = "jdbc:mysql://"+dbAddress+"/"+dbname;
-        boolean SqlConnectCreated =  SqlConnect.isInstanceCreated();
+        String url = "jdbc:mysql://" + dbAddress + "/" + dbname;
+        boolean SqlConnectCreated = SqlConnect.isInstanceCreated();
 
         try {
-            if(SqlConnectCreated){
-                SqlConnect.getSqlConnect().setDatabaseParams(url,user,password);
-            }else{
-                SqlConnect.getSqlConnect(url,dbname,password);
+            if (SqlConnectCreated) {
+                SqlConnect.getSqlConnect().setDatabaseParams(url, user, password);
+            } else {
+                SqlConnect.getSqlConnect(url, dbname, password);
             }
 
-        }catch (SQLException e) {
+        } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
             SqlConnect.getSqlConnect().setConnection(null);
             // 捕获数据库连接异常
@@ -147,7 +151,7 @@ public class DatabaseImportPage extends JFrame{
 
         SqlConnect connection = SqlConnect.getSqlConnect();
 
-        Connection con =  connection.getConnection(); // 调用连接数据库的方法
+        Connection con = connection.getConnection(); // 调用连接数据库的方法
 
 
         Statement statement = null; // 创建声明对象
@@ -159,20 +163,75 @@ public class DatabaseImportPage extends JFrame{
 
         java.util.List<String> sqlFiles = new ArrayList<>();
 
-        if(folderPath.endsWith(".sql")){
+        if (folderPath.endsWith(".sql")) {
             sqlFiles.add(folderPath);
-        }else{
+        } else {
             File folder = new File(folderPath);
             sqlFiles = FileHandle.findSqlFiles(folder);
         }
 
 
-//        try {
-//            con.setAutoCommit(false);  // 以文件为单位进行事务处理
+        ProgressBarPage progressBarPage = ProgressBarPage.getProgressBarPage();
 
-        boolean continueExecute = true;
-        for (String sqlFilePath : sqlFiles) {
-            if(continueExecute){
+        Statement finalStatement = statement;
+
+        int length = 100 / sqlFiles.size(); // 进度条的长度
+
+        java.util.List<String> finalSqlFiles = sqlFiles;
+
+        List<String> finalSqlFiles1 = sqlFiles;
+        SwingWorker<Void, ProgressBarPage.ProgressData> worker = new SwingWorker<Void, ProgressBarPage.ProgressData>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                int totalTasks = finalSqlFiles1.size();
+
+                for (int i = 0; i < totalTasks; i++) {
+                    if(! continueExecute){
+                        break;
+                    }
+                    // 模拟执行任务
+                    String sql = "执行：" + finalSqlFiles1.get(i);
+                    updateProgress(i+1, totalTasks, sql);
+
+                    try {
+                        Thread.sleep(500); // 模拟耗时操作
+                        ExcuteSql(finalStatement, finalSqlFiles.get(i), finalSqlFiles);
+
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                return null;
+            }
+
+            @Override
+            protected void process(List<ProgressBarPage.ProgressData> chunks) {
+                // 更新进度条和SQL信息
+                for (ProgressBarPage.ProgressData data : chunks) {
+                    ProgressBarPage.setProcess(data.getProgress());
+                    ProgressBarPage.setRunningSql(data.getSql() );
+                }
+            }
+
+            private void updateProgress(int currentTask, int totalTasks, String sql) {
+                int progress = (int) ((double) currentTask / totalTasks * 100);
+                publish(new ProgressBarPage.ProgressData(progress, sql));
+            }
+
+            @Override
+            protected void done() {
+                // 任务完成后执行操作
+                System.out.println("执行完毕");
+                continueExecute = true;
+            }
+        };
+
+        worker.execute();
+    }
+
+
+    private void ExcuteSql(Statement statement, String sqlFilePath, java.util.List<String> SqlFiles){
 
                 String result = new String();
 
@@ -184,63 +243,19 @@ public class DatabaseImportPage extends JFrame{
 
                 String[] lines = result.split("\n");
                 for (String line : lines) {
-                    if(continueExecute){
+                    if(this.continueExecute){
                         try {
                             System.out.println(line);
                             statement.execute(line);
                         } catch (SQLException e) { // 捕获sql异常，提示用用户修改
-                            DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath, sqlFiles,statement);
-                            continueExecute = false;
+                            DeBugPage newFrame = new DeBugPage(line,lines,sqlFilePath, SqlFiles,statement,e);
+
+                            this.continueExecute = false;
                             throw new RuntimeException(e);
                         }
                     }else break;
                 }
-            }else break;
-        }
-
-//        JOptionPane.showMessageDialog(null, "执行成功" , "提示", JOptionPane.INFORMATION_MESSAGE);
-
-
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            try {
-//                con.rollback();
-//            } catch (SQLException ex) {
-//                throw new RuntimeException(ex);
-//            }
-//            throw new RuntimeException(e);
-//        } finally {
-//            try {
-//                con.setAutoCommit(true);
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-
     }
-
-//    private static void ExcuteSql(Statement statement,java.util.List<String> sqlFiles,int start){
-//
-////        这里通过索引，跳过已经执行过的那个sql文件，直接执行下一个
-//        for (int i = start+1;i<sqlFiles.size();i++) {
-//            String result = new String();
-//
-//            try {  // 捕获文件未取到的 exception
-//                result = FileHandle.readFileContent(sqlFiles.get(i));
-//            } catch (FileNotFoundException e) {
-//                throw new RuntimeException(e);
-//            }
-//
-//            String[] lines = result.split("\n");
-//            for (String line : lines) {
-//                try {
-//                    statement.execute(line);
-//                } catch (SQLException e) { // 捕获sql异常，提示用用户修改
-//                    DeBugPage newFrame = new DeBugPage(line,lines,sqlFiles.get(i), sqlFiles,statement);
-//                }
-//            }
-//        }
-//    }
 
 
     // 添加测试数据库连接的逻辑方法
@@ -272,7 +287,6 @@ public class DatabaseImportPage extends JFrame{
 
 
     public static void main(String[] args) {
- 
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 DatabaseImportPage importApp = new DatabaseImportPage();
@@ -281,4 +295,9 @@ public class DatabaseImportPage extends JFrame{
         });
 
     }
+
+
 }
+
+
+
