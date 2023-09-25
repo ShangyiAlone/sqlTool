@@ -56,7 +56,7 @@ public class FileHandle {
         for (String sqlFilePath : sqlFiles) {
             String result = new String();
             try {
-                result =  readFileContent(sqlFilePath);
+                result =  readFileContent(sqlFilePath,"UTF-8");
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -69,18 +69,67 @@ public class FileHandle {
     }
 
 
-    public static String readFileContent(String filePath) throws FileNotFoundException {
+    public static String readFileContent(String filePath,String type) throws FileNotFoundException {
+        String encoding = type;
         StringBuilder content = new StringBuilder();
         FileReader fileHandle = new FileReader(filePath);
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+
+//        使用系统默认的编码格式读取
+//        try (BufferedReader reader = new BufferedReader(new FileReader(filePath)) ) {
+//            String line;
+//            while ((line = reader.readLine()) != null) {
+//                content.append(line).append("\n");
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), encoding))) {
             String line;
             while ((line = reader.readLine()) != null) {
+                // 处理每行文本
                 content.append(line).append("\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return content.toString();
+    }
+
+//  指定格式写入文本
+    public static void SaveDate(String sqlFilePath,String text,String type){
+//        try {
+//            // 创建一个 FileWriter 对象来写入文件
+//            FileWriter writer = new FileWriter(sqlFilePath);
+//
+//            // 写入文本到文件
+//            writer.write(text);
+//
+//            // 关闭文件写入流
+//            writer.close();
+//
+//            System.out.println("文本已成功写入文件：" + sqlFilePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            System.err.println("写入文件时发生错误：" + e.getMessage());
+//        }
+        try {
+            // 指定文件编码为UTF-8
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(sqlFilePath), type));
+
+            // 写入文本到文件
+            writer.write(text);
+
+            // 关闭文件写入流
+            writer.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("写入文件时发生错误：" + e.getMessage());
+        }
+
+
     }
 
 
@@ -98,7 +147,6 @@ public class FileHandle {
             for (File file : files) {
                 // 处理SQL文件，例如读取文件内容
                 String filePath = file.getAbsolutePath();
-//                System.out.println("SQL文件名：" + filePath);
                 sqlFilesList.add(filePath);
 
                 // 在这里可以使用文件读取方法来读取SQL文件的内容
