@@ -5,7 +5,7 @@ import java.awt.event.WindowEvent;
 
 public class ProgressBarPage extends Frame{
 
-    static ProgressBarPage progressBarPage ;
+    private static  ProgressBarPage progressBarPage ;
 
     static JFrame  frame = new JFrame("进度");
     static JProgressBar progressBar = new JProgressBar(0, 100);
@@ -13,6 +13,8 @@ public class ProgressBarPage extends Frame{
     static JLabel statusLabel = new JLabel("正在执行：");
 
     private ProgressBarPage(){
+        ImageIcon icon = new ImageIcon("src/pic/icon.jpg");
+        frame.setIconImage(icon.getImage());
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(400, 150);
         frame.setLayout(new BorderLayout());
@@ -45,11 +47,11 @@ public class ProgressBarPage extends Frame{
     }
 
     public  static ProgressBarPage getProgressBarPage(){
-        return new ProgressBarPage();
+            return new ProgressBarPage();
     }
 
-    public void close(){
-        this.progressBarPage.dispose();
+    public static void close(){
+        progressBarPage.setVisible(false);
     }
 
     public static class ProgressData {
@@ -69,7 +71,6 @@ public class ProgressBarPage extends Frame{
             return sql;
         }
     }
-
 
     public static void main(String[] args) {
         ProgressBarPage progressBarPage = new ProgressBarPage();
