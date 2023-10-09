@@ -1,5 +1,3 @@
-package test;
-
 import org.mozilla.universalchardet.UniversalDetector;
 
 import java.io.BufferedInputStream;
@@ -8,7 +6,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-public class test2 {
+// 识别文件编码类型工具类
+public class FileEncoding {
     public static Charset detectFileEncoding(String filePath) throws IOException {
         FileInputStream fis = new FileInputStream(new File(filePath));
         BufferedInputStream bis = new BufferedInputStream(fis);
@@ -40,8 +39,6 @@ public class test2 {
     }
 
     public static void main(String[] args) {
-//        String filePath = "C:\\Users\\33718\\Desktop\\sqlTool\\sqlTool\\src\\test\\test3.py";
-
         String filePath = "C:\\Users\\Administrator\\" +
                 "Desktop\\init_unmaned_plane_system-master\\sqlTool\\src\\test\\2.txt";
 

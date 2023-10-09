@@ -60,9 +60,6 @@ public class OracleConnection {
 
         Statement stmt = con.createStatement();
 
-        // SQL 插入语句
-//        String sql = "INSERT INTO a_test (id, name) vALUES (3, 'shangyi');";
-
         String sql = "select * from a_test ";
 
         // 执行插入操作

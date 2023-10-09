@@ -24,7 +24,8 @@ public class DatabaseImportPage extends JFrame{
         setTitle("数据库导入工具");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600, 400);
-        setLayout(new GridLayout(8, 2));
+//        setLayout(new GridLayout(8, 2)); // 添加文件编码输入框
+        setLayout(new GridLayout(7, 2));
         ImageIcon icon = new ImageIcon("src/pic/icon.jpg");
         setIconImage(icon.getImage());
 
@@ -84,13 +85,11 @@ public class DatabaseImportPage extends JFrame{
         add(passwordLabel);
         add(passwordField);
 
-        add(fileTypeLabel);
-        add(FileTypeField);
+//        add(fileTypeLabel);
+//        add(FileTypeField);
 
         add(folderLabel);
         add(panel);
-
-
 
         add(importButton);
         add(testConnectionButton);
@@ -106,7 +105,7 @@ public class DatabaseImportPage extends JFrame{
                 String password = new String(passwordField.getPassword());
                 String user = userField.getText();
                 String folder = folderField.getText();
-                String fileType = FileTypeField.getText();
+                String fileType = FileTypeField.getText(); // 文件编码格式
 
                 // 执行导入操作，你可以在这里调用相应的方法或函数
                 importData(dbAddress,dbName ,user, password, folder,dbType,fileType);
