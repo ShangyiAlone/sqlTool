@@ -1,10 +1,12 @@
 # sqlTool sql文件夹批处理程序
 
-![img](https://github.com/ShangyiAlone/sqlTool/assets/92379749/b286fe36-3535-4147-81e7-5528a50a37be)
+![image](https://github.com/ShangyiAlone/sqlTool/assets/92379749/0e2fc7da-5b6f-420f-ab88-ba666e44ba94)
 
-![image](https://github.com/ShangyiAlone/sqlTool/assets/92379749/30efe8aa-8425-4a07-bbc2-c6212e78ba96)
+![image](https://github.com/ShangyiAlone/sqlTool/assets/92379749/cd949bcb-8eb8-4737-b6d7-86ea083d94c8)
 
-![image](https://github.com/ShangyiAlone/sqlTool/assets/92379749/860c82f7-a2ad-4e36-b98b-34e4e839b441)
+![image](https://github.com/ShangyiAlone/sqlTool/assets/92379749/1daf47a0-7818-417d-a84c-d9d3086d595e)
+
+
 
 支持sql文件夹批处理，选中文件夹或者sql文件
 
