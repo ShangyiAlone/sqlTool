@@ -1,4 +1,8 @@
 
+import DataBaseConnection.MysqlConnection;
+import DataBaseConnection.OracleConnection;
+import FileUtil.FileHandle;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -8,6 +12,8 @@ import java.io.FileNotFoundException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static DataBaseConnection.OracleConnection.getSqlConnect;
 
 public class DatabaseImportPage extends JFrame{
 
@@ -21,7 +27,7 @@ public class DatabaseImportPage extends JFrame{
     boolean continueExecute = true;
 
     public DatabaseImportPage() {
-        setTitle("数据库导入工具");
+        setTitle("数据库批量导入工具");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600, 400);
 //        setLayout(new GridLayout(8, 2)); // 添加文件编码输入框
@@ -34,7 +40,7 @@ public class DatabaseImportPage extends JFrame{
 
         JLabel dbAddressLabel = new JLabel("服务器地址:");
         dbAddressField = new JTextField();
-        JLabel dbName = new JLabel("数据库名称:");
+        JLabel dbName = new JLabel("数据库或服务名称:");
         dbNameField = new JTextField();
         JLabel passwordLabel = new JLabel("密码:");
         passwordField = new JPasswordField();
@@ -157,58 +163,52 @@ public class DatabaseImportPage extends JFrame{
 
     // 添加导入数据的逻辑方法
     private void importData(String dbAddress,String dbname, String user, String password, String folderPath,String dbtype,String fileType)  {
-        dbAddress = "10.16.53.33:3306";
+        dbAddress = "localhost:3306";
         dbname = "sqltool";
         user = "root";
         password = "shangyi";
-        folderPath = "C:\\Users\\Administrator\\Desktop\\test";
+        folderPath = "C:\\Users\\33718\\Desktop\\test\\mysql";
         dbtype = "mysql";
 
         //        oracle配置
-        dbAddress = "localhost:1521";
-        dbname = "XE";
-        user = "C###SHANGYI";
-        password = "1";
-        folderPath = "C:\\Users\\Administrator\\Desktop\\test";
-        dbtype = "oracle";
+//        dbAddress = "localhost:1521";
+//        dbname = "XE";
+//        user = "C##SHANGYI1";
+//        password = "1";
+//        folderPath = "C:\\Users\\33718\\Desktop\\test\\oracle";
+//        dbtype = "oracle";
 
 
         Connection con = null;
-        if (dbtype == "mysql"){
-            String url = "jdbc:" + dbtype+ "://" + dbAddress + "/" + dbname;
+        if (dbtype == "mysql") {
+            String url = "jdbc:" + dbtype + "://" + dbAddress + "/" + dbname;
 
-//            boolean SqlConnectCreated = MysqlConnection.isInstanceCreated();
-//
-//            try {
-//                if (SqlConnectCreated) {
-//                    MysqlConnection.getSqlConnect().setDatabaseParams(url, user, password);
-//                } else {
-//                    MysqlConnection.getSqlConnect(url, dbname, password);
-//                }
-//
-//            } catch (SQLException e) {
-//                JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
-//                MysqlConnection.getSqlConnect().setConnection(null);
-//                // 捕获数据库连接异常
-//                e.printStackTrace();
-//
-//            }
-//
-//            MysqlConnection connection = MysqlConnection.getSqlConnect();
+            MysqlConnection mysql;
+            try {
+                mysql = new MysqlConnection(url, user, password);
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
+                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
 
-//        Connection con = connection.getConnection(); // 调用连接数据库的方法
-//            con = connection.getSqlConnect().getConnection();
+            con = mysql.connection;
+
+
         }else{
-            String url = "jdbc:" + dbtype +":thin:@"+"//"+dbAddress+":"+dbname;
+            String url = "jdbc:" + dbtype +":thin:@"+dbAddress+":"+dbname;
 
             System.out.println(url);
 
+            OracleConnection oracleConnection;
             try {
-                OracleConnection oracleConnection = new OracleConnection(url,user,password);
+                oracleConnection = new OracleConnection(url,user,password);
             } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
                 throw new RuntimeException(e);
             }
-            con = OracleConnection.connection;
+            con = oracleConnection.connection;
         }
 
 
@@ -228,11 +228,14 @@ public class DatabaseImportPage extends JFrame{
             sqlFiles = FileHandle.findSqlFiles(folder);
         }
 
-
         ProgressBarPage progressBarPage = ProgressBarPage.getProgressBarPage();
 
         Statement finalStatement = statement;
 
+        if (sqlFiles.size() == 0){
+            JOptionPane.showMessageDialog(null, "文件夹为空", "提示", JOptionPane.ERROR_MESSAGE);
+            return ;
+        }
         int length = 100 / sqlFiles.size(); // 进度条的长度
 
         java.util.List<String> finalSqlFiles = sqlFiles;
@@ -250,13 +253,13 @@ public class DatabaseImportPage extends JFrame{
                     String sql = "执行：" + finalSqlFiles.get(i);
                     updateProgress(i+1, totalTasks, sql);
 
-                    try {
-                        Thread.sleep(500); // 模拟耗时操作
-                        ExcuteSql(finalStatement, finalSqlFiles.get(i), finalSqlFiles,fileType);
+//                    try {
+//                        Thread.sleep(500); // 模拟耗时操作
+                    ExcuteSql(finalStatement, finalSqlFiles.get(i), finalSqlFiles,fileType);
 
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
+//                    } catch (InterruptedException ex) {
+//                        ex.printStackTrace();
+//                    }
                 }
 
                 return null;
@@ -325,19 +328,19 @@ public class DatabaseImportPage extends JFrame{
     // 添加测试数据库连接的逻辑方法
     private void testDatabaseConnection(String dbAddress, String dbname,String user, String password,String type) throws SQLException {
 //        mysql配置
-        dbAddress = "localhost:3306";
-        dbname = "sqltool";
-        user = "root";
-        password = "shangyi";
-//        folderPath = "C:\\Users\\Administrator\\Desktop\\test";
-        type = "mysql";
+//        dbAddress = "localhost:3306";
+//        dbname = "sqltool";
+//        user = "root";
+//        password = "shangyi";
+//        folderPath = "C:\Users\33718\Desktop\test";
+//        type = "mysql";
 
 //        oracle配置
-//        dbAddress = "10.16.53.25:1521";
-//        dbname = "ORCLPDB1";
-//        user = "NCC_IFRS9_0605";
+//        dbAddress = "localhost:1521";
+//        dbname = "XE";
+//        user = "C##SHANGYI1";
 //        password = "1";
-//        String folderPath = "C:\\Users\\Administrator\\Desktop\\test";
+//        String folderPath = "C:\\Users\\33718\\Desktop\\test";
 //        type = "oracle";
 
         Connection connection = null;
@@ -370,23 +373,6 @@ public class DatabaseImportPage extends JFrame{
             }
 
         }
-
-//        boolean SqlConnectCreated =  MysqlConnection.isInstanceCreated();
-//
-//        try {
-//            if(SqlConnectCreated){
-//                MysqlConnection.getSqlConnect().setDatabaseParams(url,user,password);
-//            }else{
-//                MysqlConnection.getSqlConnect(url,dbname,password);
-//            }
-//            JOptionPane.showMessageDialog(null, "连接成功", "提示", JOptionPane.INFORMATION_MESSAGE);
-//        }catch (SQLException e) {
-//            // 捕获数据库连接异常
-//            e.printStackTrace();
-//            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
-//        } catch (Exception e){
-//            JOptionPane.showMessageDialog(null, "连接失败：" + e.getMessage(), "提示", JOptionPane.ERROR_MESSAGE);
-//        }
 
     }
 

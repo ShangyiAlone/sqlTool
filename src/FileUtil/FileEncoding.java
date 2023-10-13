@@ -1,3 +1,5 @@
+package FileUtil;
+
 import org.mozilla.universalchardet.UniversalDetector;
 
 import java.io.BufferedInputStream;
