@@ -1,3 +1,5 @@
+package FileUtil;
+
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -5,32 +7,6 @@ import java.util.List;
 
 
 public class FileHandle {
-    public static void main(String[] args) throws FileNotFoundException {
-        String folderPath = "C:\\Users\\Administrator\\Desktop\\init_unmaned_plane_system-master\\sqlTool\\src\\FileHandle.java"; // 替换为实际的文件夹路径
-        String result = readFileContent(folderPath,"utf-8");
-//        System.out.println(result);
-    }
-
-    public static List<Integer> getAllSql(String folderPath){
-        File folder = new File(folderPath);
-
-        List<String> sqlFiles = findSqlFiles(folder);
-
-        StringBuilder builder = new StringBuilder();
-        for (String sqlFilePath : sqlFiles) {
-            String result = new String();
-            try {
-                result =  readFileContent(sqlFilePath,"UTF-8");
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-
-            builder.append(result);
-
-        }
-
-        return new ArrayList<Integer>();
-    }
 
     public static String readFileContent(String filePath,String type) throws FileNotFoundException {
         String encoding = type;
@@ -70,21 +46,6 @@ public class FileHandle {
 
 //  指定格式写入文本
     public static void SaveDate(String sqlFilePath,String text,String type){
-//        try {
-//            // 创建一个 FileWriter 对象来写入文件
-//            FileWriter writer = new FileWriter(sqlFilePath);
-//
-//            // 写入文本到文件
-//            writer.write(text);
-//
-//            // 关闭文件写入流
-//            writer.close();
-//
-//            System.out.println("文本已成功写入文件：" + sqlFilePath);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            System.err.println("写入文件时发生错误：" + e.getMessage());
-//        }
         try {
             // 指定文件编码为UTF-8
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(sqlFilePath), type));
@@ -100,9 +61,7 @@ public class FileHandle {
             System.err.println("写入文件时发生错误：" + e.getMessage());
         }
 
-
     }
-
 
     public static List<String> findSqlFiles(File folder) {
         List<String> sqlFilesList = new ArrayList<>();
@@ -139,6 +98,15 @@ public class FileHandle {
         }
 
         return sqlFilesList;
+    }
+
+    public static void main(String[] args) throws FileNotFoundException {
+        String folderPath = "C:\\Users\\33718\\Desktop\\test"; // 替换为实际的文件夹路径
+//        String result = readFileContent(folderPath,"utf-8");
+//        System.out.println(result);
+        List<String> res = findSqlFiles(new File(folderPath));
+        System.out.println(res);
+
     }
 
 

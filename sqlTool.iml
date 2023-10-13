@@ -5,11 +5,4 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
   </component>
-  <component name="PyNamespacePackagesService">
-    <option name="namespacePackageFolders">
-      <list>
-        <option value="$MODULE_DIR$/src/lib" />
-      </list>
-    </option>
-  </component>
 </module>

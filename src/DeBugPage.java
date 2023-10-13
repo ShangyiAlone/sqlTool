@@ -1,3 +1,5 @@
+import FileUtil.FileHandle;
+
 import javax.swing.*;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -9,13 +11,9 @@ import java.awt.event.ActionListener;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 
 public class DeBugPage extends JFrame {
 //    private static DeBugPage deBugPage;
