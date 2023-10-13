@@ -13,8 +13,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static DataBaseConnection.OracleConnection.getSqlConnect;
-
 public class DatabaseImportPage extends JFrame{
 
     private JTextField dbAddressField;
